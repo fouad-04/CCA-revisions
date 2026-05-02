@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0D1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>CCA Révisions</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg: #0D1117; --card: #161B22; --border: #21262D;
+      --text: #E6EDF3; --text2: #8B949E; --text3: #6E7681;
+      --audit: #3B82F6; --fisc: #10B981; --compta: #8B5CF6; --ctrl: #F59E0B;
+      --danger: #EF4444; --success: #10B981; --warning: #F59E0B;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
+    #app { height: 100vh; display: flex; flex-direction: column; position: relative; }
+    .screen { flex: 1; overflow-y: auto; padding: 16px 16px 100px; display: none; -webkit-overflow-scrolling: touch; }
+    .screen.active { display: block; }
+
+    /* Tab Bar */
+    .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--card); border-top: 1px solid var(--border); padding: 8px 0 24px; z-index: 100; }
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; background: none; border: none; color: var(--text3); cursor: pointer; }
+    .tab-btn.active { color: var(--audit); }
+    .tab-btn span { font-size: 11px; font-weight: 500; }
+
+    /* Hero */
+    .hero { background: linear-gradient(135deg, #3B82F620 0%, #8B5CF620 50%, transparent 100%); border-radius: 20px; padding: 20px; margin-bottom: 16px; }
+    .hero-content { display: flex; justify-content: space-between; align-items: center; }
+    .hero h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+    .hero p { font-size: 13px; color: var(--text2); }
+
+    /* Progress Ring */
+    .progress-ring { position: relative; width: 100px; height: 100px; }
+    .progress-ring svg { transform: rotate(-90deg); }
+    .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; font-weight: 700; }
+
+    /* Stats Row */
+    .stats-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .stat-box { flex: 1; background: var(--card); border-radius: 12px; padding: 12px; text-align: center; border: 1px solid var(--border); }
+    .stat-value { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+    .stat-label { font-size: 11px; color: var(--text2); }
+
+    /* Urgence */
+    .urgence { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--danger)40; }
+    .urgence-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--danger); font-weight: 600; font-size: 14px; }
+    .urgence-content { display: flex; justify-content: space-between; align-items: center; }
+    .urgence-badge { background: var(--danger)20; color: var(--danger); padding: 4px 10px; border-radius: 8px; font-size: 13px; font-weight: 700; }
+
+    /* Section */
+    .section { margin-bottom: 20px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .section h2, .section h3 { font-size: 18px; font-weight: 600; }
+
+    /* Module Card */
+    .module-card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); cursor: pointer; }
+    .module-card:active { transform: scale(0.98); }
+    .module-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .module-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .module-name { flex: 1; font-weight: 600; font-size: 16px; }
+    .module-badge { padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+    .module-stats { display: flex; align-items: center; gap: 16px; }
+    .module-info { flex: 1; }
+    .module-chapitres { font-size: 14px; color: var(--text2); margin-bottom: 2px; }
+    .module-date { font-size: 12px; color: var(--text3); }
+
+    /* Chapitre Item */
+    .chapitre-item { display: flex; align-items: center; background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 8px; border: 1px solid var(--border); cursor: pointer; user-select: none; }
+    .chapitre-checkbox { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; }
+    .chapitre-content { flex: 1; }
+    .chapitre-titre { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+    .chapitre-titre.done { text-decoration: line-through; color: var(--text3); }
+    .chapitre-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chapitre-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+
+    /* Chapitre du jour */
+    .chapitre-jour { background: var(--card); border-radius: 12px; padding: 14px; margin-bottom: 8px; border: 1px solid var(--border); border-left: 3px solid var(--jour-color); }
+    .chapitre-jour-titre { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .chapitre-jour-module { font-size: 12px; margin-bottom: 8px; }
+
+    /* Motivation */
+    .motivation { background: var(--card); border-radius: 16px; padding: 16px; border: 1px solid var(--border); display: flex; align-items: flex-start; gap: 10px; }
+    .motivation p { font-size: 14px; color: var(--text2); font-style: italic; line-height: 1.5; }
+
+    /* Modal */
+    .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; }
+    .modal.hidden { display: none; }
+    .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; justify-content: flex-end; }
+    .modal-content { background: var(--card); border-radius: 24px 24px 0 0; padding: 24px; border-top: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-header h2 { font-size: 20px; font-weight: 700; }
+    .close-btn { background: none; border: none; color: var(--text); font-size: 28px; cursor: pointer; padding: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+
+    /* Inputs */
+    input[type="text"], input[type="date"] { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; color: var(--text); font-size: 15px; margin-bottom: 12px; font-family: inherit; }
+    input::placeholder { color: var(--text3); }
+    label { display: block; font-size: 14px; color: var(--text2); margin-bottom: 10px; font-weight: 500; }
+
+    /* Color Picker */
+    .color-picker { display: flex; gap: 10px; margin-bottom: 20px; }
+    .color-option { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
+    .color-option.selected { border-color: var(--text); transform: scale(1.1); }
+
+    /* Priorite */
+    .priorite-picker { display: flex; gap: 8px; margin-bottom: 16px; }
+    .priorite-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text3); font-size: 14px; font-weight: 500; cursor: pointer; }
+    .priorite-btn.selected { background: var(--warning)20; border-color: var(--warning); color: var(--warning); font-weight: 700; }
+
+    /* Checkbox */
+    .checkbox-label { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; cursor: pointer; }
+    .checkbox-label input { width: 22px; height: 22px; accent-color: var(--danger); }
+
+    /* Buttons */
+    .modal-buttons { display: flex; gap: 12px; }
+    .btn-primary, .btn-secondary, .btn-danger { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: var(--audit); color: var(--bg); }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger)10; color: var(--danger); border: 1px solid var(--danger)30; margin-top: 16px; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    /* FAB */
+    .fab { position: fixed; right: 20px; bottom: 100px; width: 56px; height: 56px; border-radius: 50%; background: var(--audit); color: var(--bg); border: none; font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 50; }
+    .fab.hidden { display: none; }
+
+    /* Module Detail */
+    .module-detail-header { margin-bottom: 16px; }
+    .module-stats-row { display: flex; justify-content: center; gap: 30px; margin-bottom: 14px; }
+    .module-stat { text-align: center; }
+    .module-stat-value { font-size: 18px; font-weight: 700; display: block; }
+    .module-stat-label { font-size: 11px; color: var(--text2); }
+    .progress-bar-bg { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+
+    /* Filtres */
+    .filtres { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+    .filtre-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text3); font-size: 13px; white-space: nowrap; cursor: pointer; }
+    .filtre-btn.active { background: var(--audit)20; border-color: var(--audit); color: var(--audit); font-weight: 600; }
+
+    /* Focus Screen */
+    .focus-container { display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
+    .mode-selector { display: flex; background: var(--card); border-radius: 12px; padding: 4px; margin-bottom: 30px; border: 1px solid var(--border); }
+    .mode-btn { flex: 1; padding: 10px 20px; border-radius: 10px; border: none; background: none; color: var(--text3); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+    .mode-btn.active { background: var(--bg); color: var(--text); }
+    .timer-ring { position: relative; width: 280px; height: 280px; margin-bottom: 30px; }
+    .timer-ring svg { transform: rotate(-90deg); }
+    .timer-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    #timer-display { font-size: 48px; font-weight: 700; }
+    #timer-label { font-size: 14px; color: var(--text2); margin-top: 4px; }
+    .timer-controls { display: flex; align-items: center; gap: 30px; margin-bottom: 20px; }
+    .timer-btn { width: 56px; height: 56px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); color: var(--text3); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .timer-btn.play { width: 80px; height: 80px; background: var(--audit); color: var(--bg); border: none; }
+    .sessions-count { text-align: center; width: 56px; }
+    .sessions-count span:first-child { font-size: 20px; font-weight: 700; display: block; }
+    .sessions-count span:last-child { font-size: 10px; color: var(--text3); }
+    .dots-container { display: flex; gap: 8px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; max-width: 200px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* Chips */
+    .chips-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+    .chip { display: flex; align-items: center; gap: 8px; background: var(--card); border-radius: 12px; padding: 10px 14px; border: 1px solid var(--border); white-space: nowrap; cursor: pointer; }
+    .chip.selected { background: var(--chip-color)20; border-color: var(--chip-color); }
+    .chip-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .chip-text { font-size: 13px; font-weight: 500; }
+
+    /* Stats */
+    .stats-title { font-size: 28px; font-weight: 700; margin-bottom: 20px; padding-top: 10px; }
+    .kpi-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .kpi-card { flex: 1; background: var(--card); border-radius: 16px; padding: 16px; text-align: center; border: 1px solid var(--border); }
+    .kpi-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+    .kpi-value { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .kpi-label { font-size: 11px; color: var(--text2); }
+    .global-progress-container { display: flex; justify-content: center; margin: 20px 0; }
+    .progress-ring-large { position: relative; width: 160px; height: 160px; }
+    .progress-ring-large svg { transform: rotate(-90deg); }
+    .progress-large-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    .progress-large-text span:first-child { font-size: 28px; font-weight: 700; display: block; }
+    .progress-large-text span:last-child { font-size: 13px; color: var(--text2); }
+
+    .stats-module-row { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 10px; border: 1px solid var(--border); }
+    .stats-module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .stats-module-title { display: flex; align-items: center; gap: 10px; }
+    .stats-module-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .stats-module-name { font-size: 15px; font-weight: 600; }
+    .stats-module-jours { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .stats-progress-bar-bg { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-right: 10px; flex: 1; }
+    .stats-progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+    .stats-progress-row { display: flex; align-items: center; }
+    .stats-progress-text { font-size: 12px; color: var(--text2); min-width: 80px; text-align: right; }
+
+    .repartition-row { display: flex; align-items: center; margin-bottom: 12px; }
+    .repartition-label { display: flex; align-items: center; gap: 8px; width: 140px; }
+    .repartition-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .repartition-name { font-size: 12px; font-weight: 500; }
+    .repartition-bar-bg { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-right: 10px; }
+    .repartition-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+    .repartition-value { font-size: 12px; font-weight: 600; color: var(--text2); min-width: 35px; text-align: right; }
+
+    .hidden { display: none !important; }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    ::selection { background: var(--audit)40; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Navigation -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="home">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Accueil</span>
+      </button>
+      <button class="tab-btn" data-tab="focus">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Focus</span>
+      </button>
+      <button class="tab-btn" data-tab="stats">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Stats</span>
+      </button>
+    </nav>
+
+    <!-- Home Screen -->
+    <div id="screen-home" class="screen active">
+      <div class="hero">
+        <div class="hero-content">
+          <div>
+            <h1>CCA Révisions</h1>
+            <p>Master Comptabilité, Contrôle, Audit</p>
+          </div>
+          <div class="progress-ring">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#21262D" stroke-width="6"/>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#3B82F6" stroke-width="6" stroke-linecap="round" stroke-dasharray="0 264" transform="rotate(-90 50 50)" id="global-progress-circle"/>
+            </svg>
+            <div class="progress-text" id="global-progress-text">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-value" id="stat-termines">0</div><div class="stat-label">Terminés</div></div>
+        <div class="stat-box"><div class="stat-value" id="stat-encours">0</div><div class="stat-label">En cours</div></div>
+        <div class="stat-box"><div class="stat-value" id="stat-today">0m</div><div class="stat-label">Aujourd'hui</div></div>
+        <div class="stat-box"><div class="stat-value" id="stat-modules">0</div><div class="stat-label">Modules</div></div>
+      </div>
+
+      <div id="urgence-section" class="urgence hidden">
+        <div class="urgence-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Urgence</span>
+        </div>
+        <div class="urgence-content">
+          <span id="urgence-module"></span>
+          <span class="urgence-badge" id="urgence-jours"></span>
+        </div>
+      </div>
+
+      <div id="chapitres-jour-section" class="section hidden">
+        <h2>À travailler aujourd'hui</h2>
+        <div id="chapitres-jour-list"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>Mes modules</h2>
+          <button class="icon-btn" id="btn-add-module">+</button>
+        </div>
+        <div id="modules-list"></div>
+      </div>
+
+      <div class="motivation">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7681" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3"/></svg>
+        <p id="motivation-text"></p>
+      </div>
+    </div>
+
+    <!-- Module Detail Modal -->
+    <div id="modal-module" class="modal hidden">
+      <div class="modal-overlay">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 id="modal-module-title"></h2>
+            <button class="close-btn" id="close-module-modal">&times;</button>
+          </div>
+          <div class="module-detail-header">
+            <div class="module-stats-row">
+              <div class="module-stat"><span class="module-stat-value" id="module-progress">0%</span><span class="module-stat-label">Progression</span></div>
+              <div class="module-stat"><span class="module-stat-value" id="module-chapitres">0/0</span><span class="module-stat-label">Chapitres</span></div>
+              <div class="module-stat"><span class="module-stat-value" id="module-jours">J-0</span><span class="module-stat-label">Restants</span></div>
+            </div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="module-progress-bar"></div></div>
+          </div>
+          <div class="filtres">
+            <button class="filtre-btn active" data-filtre="Tout">Tout</button>
+            <button class="filtre-btn" data-filtre="À faire">À faire</button>
+            <button class="filtre-btn" data-filtre="En cours">En cours</button>
+            <button class="filtre-btn" data-filtre="Terminé">Terminé</button>
+          </div>
+          <div id="chapitres-list"></div>
+          <button class="btn-danger" id="btn-delete-module">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Supprimer le module
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Module Modal -->
+    <div id="modal-add-module" class="modal hidden">
+      <div class="modal-overlay">
+        <div class="modal-content">
+          <h2>Nouveau module</h2>
+          <input type="text" id="new-module-name" placeholder="Nom du module">
+          <input type="date" id="new-module-date">
+          <label>Couleur</label>
+          <div class="color-picker">
+            <button class="color-option selected" data-color="#3B82F6" style="background:#3B82F6"></button>
+            <button class="color-option" data-color="#10B981" style="background:#10B981"></button>
+            <button class="color-option" data-color="#8B5CF6" style="background:#8B5CF6"></button>
+            <button class="color-option" data-color="#F59E0B" style="background:#F59E0B"></button>
+            <button class="color-option" data-color="#EF4444" style="background:#EF4444"></button>
+            <button class="color-option" data-color="#3B82F6" style="background:#3B82F6"></button>
+          </div>
+          <div class="modal-buttons">
+            <button class="btn-secondary" id="cancel-add-module">Annuler</button>
+            <button class="btn-primary" id="confirm-add-module">Ajouter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Chapitre Modal -->
+    <div id="modal-add-chapitre" class="modal hidden">
+      <div class="modal-overlay">
+        <div class="modal-content">
+          <h2>Nouveau chapitre</h2>
+          <input type="text" id="new-chapitre-titre" placeholder="Titre du chapitre">
+          <label>Priorité</label>
+          <div class="priorite-picker">
+            <button class="priorite-btn" data-priorite="1">P1</button>
+            <button class="priorite-btn selected" data-priorite="2">P2</button>
+            <button class="priorite-btn" data-priorite="3">P3</button>
+          </div>
+          <label class="checkbox-label"><input type="checkbox" id="new-chapitre-difficile"><span>Marquer comme difficile</span></label>
+          <div class="modal-buttons">
+            <button class="btn-secondary" id="cancel-add-chapitre">Annuler</button>
+            <button class="btn-primary" id="confirm-add-chapitre">Ajouter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab hidden" id="fab-add-chapitre">+</button>
+
+    <!-- Focus Screen -->
+    <div id="screen-focus" class="screen">
+      <div class="focus-container">
+        <div class="mode-selector">
+          <button class="mode-btn active" data-mode="pomodoro">Pomodoro 25min</button>
+          <button class="mode-btn" data-mode="focus">Focus 50min</button>
+        </div>
+        <div class="timer-ring">
+          <svg width="280" height="280" viewBox="0 0 280 280">
+            <circle cx="140" cy="140" r="120" fill="none" stroke="#21262D" stroke-width="12"/>
+            <circle cx="140" cy="140" r="120" fill="none" stroke="#3B82F6" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 754" transform="rotate(-90 140 140)" id="timer-circle"/>
+          </svg>
+          <div class="timer-text"><div id="timer-display">25:00</div><div id="timer-label">Prêt</div></div>
+        </div>
+        <div class="timer-controls">
+          <button class="timer-btn" id="btn-reset"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+          <button class="timer-btn play" id="btn-play"><svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          <div class="sessions-count"><span id="sessions-number">0</span><span>sessions</span></div>
+        </div>
+        <div class="dots-container" id="dots-container"></div>
+        <div class="section"><h3>Module</h3><div class="chips-container" id="focus-modules"></div></div>
+        <div class="section" id="focus-chapitres-section"><h3>Chapitre</h3><div id="focus-chapitres-list"></div></div>
+      </div>
+    </div>
+
+    <!-- Stats Screen -->
+    <div id="screen-stats" class="screen">
+      <h1 class="stats-title">Statistiques</h1>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-icon" style="background:#3B82F620"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="kpi-value" id="kpi-temps">0h0m</div><div class="kpi-label">Temps total</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:#10B98120"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="kpi-value" id="kpi-seances">0</div><div class="kpi-label">Séances</div></div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-icon" style="background:#EF444420"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="kpi-value" id="kpi-difficiles">0</div><div class="kpi-label">Difficiles restants</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:#8B5CF620"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="kpi-value" id="kpi-today">0m</div><div class="kpi-label">Minutes aujourd'hui</div></div>
+      </div>
+      <div class="section">
+        <h2>Progression globale</h2>
+        <div class="global-progress-container">
+          <div class="progress-ring-large">
+            <svg width="160" height="160" viewBox="0 0 160 160"><circle cx="80" cy="80" r="68" fill="none" stroke="#21262D" stroke-width="10"/><circle cx="80" cy="80" r="68" fill="none" stroke="#3B82F6" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 427" transform="rotate(-90 80 80)" id="stats-progress-circle"/></svg>
+            <div class="progress-large-text"><span id="stats-progress-pct">0%</span><span id="stats-progress-label">0/0</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="section"><h2>Par module</h2><div id="stats-modules-list"></div></div>
+      <div class="section" id="repartition-section"><h2>Répartition du temps</h2><div id="repartition-list"></div></div>
+    </div>
+  </div>
+
+<script>
+
+// === DATA ===
+const MOTIVATIONS = [
+  "Chaque minute de révision te rapproche du succès.",
+  "Les experts d'aujourd'hui étaient les étudiants d'hier.",
+  "La persévérance est la clé de la réussite.",
+  "Un chapitre de plus, un pas vers l'excellence.",
+  "Ton avenir se construit maintenant.",
+  "Le CCA est un marathon, pas un sprint.",
+  "Crois en toi, tu es capable.",
+  "La discipline bat le talent.",
+  "Chaque effort compte.",
+  "Tu es plus fort que tu ne le penses.",
+];
+
+const MODULES_DEFAUT = [
+  { id: 'audit', nom: 'Audit et Commissariat', couleur: '#3B82F6', date_examen: '2026-06-15' },
+  { id: 'fiscalite', nom: 'Fiscalité des Entreprises', couleur: '#10B981', date_examen: '2026-06-20' },
+  { id: 'compta', nom: 'Comptabilité Approfondie', couleur: '#8B5CF6', date_examen: '2026-06-25' },
+  { id: 'controle', nom: 'Contrôle de Gestion', couleur: '#F59E0B', date_examen: '2026-06-18' },
+];
+
+const CHAPITRES_DEFAUT = [
+  { id: 'a1', module_id: 'audit', titre: 'Cycle Ventes-Clients', priorite: 3, statut: 'À faire', est_difficile: false },
+  { id: 'a2', module_id: 'audit', titre: 'Cycle Achats-Fournisseurs', priorite: 3, statut: 'À faire', est_difficile: false },
+  { id: 'a3', module_id: 'audit', titre: 'Cycle Stocks', priorite: 2, statut: 'À faire', est_difficile: true },
+  { id: 'a4', module_id: 'audit', titre: 'Cycle Immobilisations', priorite: 2, statut: 'À faire', est_difficile: false },
+  { id: 'a5', module_id: 'audit', titre: 'Cycle Trésorerie', priorite: 2, statut: 'À faire', est_difficile: false },
+  { id: 'a6', module_id: 'audit', titre: 'Capitaux Propres & Dettes', priorite: 1, statut: 'À faire', est_difficile: true },
+  { id: 'a7', module_id: 'audit', titre: "Rapport d'audit & opinion", priorite: 3, statut: 'À faire', est_difficile: false },
+  { id: 'a8', module_id: 'audit', titre: 'Contrôle interne & risques', priorite: 3, statut: 'À faire', est_difficile: true },
+  { id: 'f1', module_id: 'fiscalite', titre: 'IS - Impôt sur les Sociétés', priorite: 3, statut: 'À faire', est_difficile: true },
+  { id: 'f2', module_id: 'fiscalite', titre: 'TVA - Régimes & déductions', priorite: 3, statut: 'À faire', est_difficile: false },
+  { id: 'f3', module_id: 'fiscalite', titre: 'IR - Impôt sur le Revenu', priorite: 2, statut: 'À faire', est_difficile: false },
+  { id: 'f4', module_id: 'fiscalite', titre: 'CFE & CVAE', priorite: 1, statut: 'À faire', est_difficile: false },
+  { id: 'f5', module_id: 'fiscalite', titre: 'Intégration fiscale', priorite: 2, statut: 'À faire', est_difficile: true },
+  { id: 'f6', module_id: 'fiscalite', titre: 'Contrôle fiscal & contentieux', priorite: 3, statut: 'À faire', est_difficile: true },
+  { id: 'c1', module_id: 'compta', titre: 'Comptes consolidés', priorite: 3, statut: 'À faire', est_difficile: true },
+  { id: 'c2', module_id: 'compta', titre: 'Fusions & scissions', priorite: 2, statut: 'À faire', est_difficile: true },
+  { id: 'c3', module_id: 'compta', titre: "Goodwill & écarts d'acquisition", priorite: 2, statut: 'À faire', est_difficile: true },
+  { id: 'c4', module_id: 'compta', titre: 'Contrats long terme', priorite: 1, statut: 'À faire', est_difficile: false },
+  { id: 'c5', module_id: 'compta', titre: 'Instruments financiers IFRS 9', priorite: 3, statut: 'À faire', est_difficile: true },
+  { id: 'c6', module_id: 'compta', titre: 'Leasing & contrats de location', priorite: 1, statut: 'À faire', est_difficile: false },
+  { id: 'g1', module_id: 'controle', titre: 'Coûts complets & partiels', priorite: 2, statut: 'À faire', est_difficile: false },
+  { id: 'g2', module_id: 'controle', titre: 'Tableau de bord & KPIs', priorite: 3, statut: 'À faire', est_difficile: false },
+  { id: 'g3', module_id: 'controle', titre: 'Budget & contrôle budgétaire', priorite: 3, statut: 'À faire', est_difficile: true },
+  { id: 'g4', module_id: 'controle', titre: 'Balanced Scorecard', priorite: 2, statut: 'À faire', est_difficile: true },
+  { id: 'g5', module_id: 'controle', titre: 'Analyse des écarts', priorite: 3, statut: 'À faire', est_difficile: false },
+];
+
+// === STORE (LocalStorage - Privé par utilisateur) ===
+const Store = {
+  getData() {
+    const data = localStorage.getItem('cca_revisions_data');
+    if (data) return JSON.parse(data);
+    return { modules: JSON.parse(JSON.stringify(MODULES_DEFAUT)), chapitres: JSON.parse(JSON.stringify(CHAPITRES_DEFAUT)), seances: [] };
+  },
+  saveData(data) { localStorage.setItem('cca_revisions_data', JSON.stringify(data)); },
+  getModules() { return this.getData().modules; },
+  getChapitres() { return this.getData().chapitres; },
+  getSeances() { return this.getData().seances; },
+  addModule(m) { const d = this.getData(); d.modules.push(m); this.saveData(d); },
+  removeModule(id) { const d = this.getData(); d.modules = d.modules.filter(m => m.id !== id); d.chapitres = d.chapitres.filter(c => c.module_id !== id); this.saveData(d); },
+  addChapitre(c) { const d = this.getData(); d.chapitres.push(c); this.saveData(d); },
+  removeChapitre(id) { const d = this.getData(); d.chapitres = d.chapitres.filter(c => c.id !== id); this.saveData(d); },
+  updateChapitre(id, u) { const d = this.getData(); const i = d.chapitres.findIndex(c => c.id === id); if (i !== -1) { d.chapitres[i] = { ...d.chapitres[i], ...u }; this.saveData(d); } },
+  addSeance(s) { const d = this.getData(); d.seances.push(s); this.saveData(d); },
+  getProgressionModule(mid) { const c = this.getChapitres().filter(x => x.module_id === mid); return c.length ? c.filter(x => x.statut === 'Terminé').length / c.length : 0; },
+  getChapitresDuJour() {
+    const c = this.getChapitres();
+    const e = c.filter(x => x.statut === 'En cours');
+    const p = c.filter(x => x.priorite === 3 && x.statut !== 'Terminé');
+    const d = c.filter(x => x.est_difficile && x.statut !== 'Terminé');
+    return [...e, ...p, ...d].filter((x, i, a) => a.findIndex(y => y.id === x.id) === i).slice(0, 5);
+  },
+  getModuleUrgent() {
+    const m = this.getModules();
+    const t = new Date().toISOString().split('T')[0];
+    const f = m.filter(x => x.date_examen >= t);
+    return f.length ? f.sort((a, b) => new Date(a.date_examen) - new Date(b.date_examen))[0] : null;
+  },
+  getTempsParModule() {
+    const d = this.getData();
+    return d.modules.map(m => {
+      const ids = d.chapitres.filter(c => c.module_id === m.id).map(c => c.id);
+      return { moduleId: m.id, minutes: d.seances.filter(s => ids.includes(s.chapitre_id)).reduce((sum, s) => sum + s.duree_minutes, 0) };
+    });
+  },
+  getTotalMinutesToday() {
+    const t = new Date().toISOString().split('T')[0];
+    return this.getSeances().filter(s => s.date === t).reduce((sum, s) => sum + s.duree_minutes, 0);
+  },
+  resetData() { localStorage.removeItem('cca_revisions_data'); }
+};
+
+const Haptics = {
+  light() { if (navigator.vibrate) navigator.vibrate(10); },
+  medium() { if (navigator.vibrate) navigator.vibrate(20); },
+  heavy() { if (navigator.vibrate) navigator.vibrate(30); },
+  success() { if (navigator.vibrate) navigator.vibrate([10, 50, 10]); },
+};
+
+// === UI ===
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+let currentModuleId = null, currentFiltre = 'Tout';
+
+function renderHome() {
+  const modules = Store.getModules(), chapitres = Store.getChapitres();
+  const termines = chapitres.filter(c => c.statut === 'Terminé').length;
+  const enCours = chapitres.filter(c => c.statut === 'En cours').length;
+  const total = chapitres.length, progression = total ? termines / total : 0;
+
+  const circ = 2 * Math.PI * 42;
+  $('#global-progress-circle').setAttribute('stroke-dasharray', `${circ * progression} ${circ}`);
+  $('#global-progress-text').textContent = Math.round(progression * 100) + '%';
+
+  $('#stat-termines').textContent = termines;
+  $('#stat-encours').textContent = enCours;
+  const tm = Store.getTotalMinutesToday();
+  $('#stat-today').textContent = `${Math.floor(tm / 60)}h${tm % 60}m`;
+  $('#stat-modules').textContent = modules.length;
+
+  const urgent = Store.getModuleUrgent();
+  const us = $('#urgence-section');
+  if (urgent) {
+    us.classList.remove('hidden');
+    $('#urgence-module').textContent = urgent.nom;
+    const j = Math.ceil((new Date(urgent.date_examen) - Date.now()) / 86400000);
+    const el = $('#urgence-jours');
+    el.textContent = 'J-' + j;
+    el.style.background = j <= 7 ? '#EF444420' : '#F59E0B20';
+    el.style.color = j <= 7 ? '#EF4444' : '#F59E0B';
+  } else us.classList.add('hidden');
+
+  const cj = Store.getChapitresDuJour();
+  const cjs = $('#chapitres-jour-section');
+  if (cj.length) {
+    cjs.classList.remove('hidden');
+    $('#chapitres-jour-list').innerHTML = cj.map(c => {
+      const m = modules.find(x => x.id === c.module_id);
+      return `<div class="chapitre-jour" style="--jour-color:${m.couleur}"><div class="chapitre-jour-titre">${c.titre}</div><div class="chapitre-jour-module" style="color:${m.couleur}">${m.nom}</div><div class="chapitre-tags"><span class="chapitre-tag" style="background:${m.couleur}20;color:${m.couleur}">P${c.priorite}</span>${c.est_difficile ? '<span class="chapitre-tag" style="background:#EF444420;color:#EF4444">Difficile</span>' : ''}</div></div>`;
+    }).join('');
+  } else cjs.classList.add('hidden');
+
+  $('#modules-list').innerHTML = modules.map(m => {
+    const prog = Store.getProgressionModule(m.id);
+    const mc = chapitres.filter(c => c.module_id === m.id);
+    const mt = mc.filter(c => c.statut === 'Terminé').length, mtot = mc.length;
+    const j = Math.ceil((new Date(m.date_examen) - Date.now()) / 86400000);
+    return `<div class="module-card" data-id="${m.id}"><div class="module-card-header"><div class="module-dot" style="background:${m.couleur}"></div><div class="module-name">${m.nom}</div>${j <= 7 ? `<span class="module-badge" style="background:${j <= 7 ? '#EF4444' : '#F59E0B'}20;color:${j <= 7 ? '#EF4444' : '#F59E0B'}">J-${j}</span>` : ''}</div><div class="module-stats"><div class="progress-ring" style="width:60px;height:60px"><svg width="60" height="60" viewBox="0 0 60 60" style="transform:rotate(-90deg)"><circle cx="30" cy="30" r="24" fill="none" stroke="#21262D" stroke-width="4"/><circle cx="30" cy="30" r="24" fill="none" stroke="${m.couleur}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${2 * Math.PI * 24 * prog} ${2 * Math.PI * 24}" transform="rotate(-90 30 30)"/></svg><div class="progress-text" style="font-size:14px">${Math.round(prog * 100)}%</div></div><div class="module-info"><div class="module-chapitres">${mt}/${mtot} chapitres</div><div class="module-date">Examen: ${new Date(m.date_examen).toLocaleDateString('fr-FR')}</div></div></div></div>`;
+  }).join('');
+
+  $$('.module-card').forEach(card => {
+    card.addEventListener('click', () => { Haptics.light(); openModuleDetail(card.dataset.id); });
+  });
+
+  $('#motivation-text').textContent = MOTIVATIONS[new Date().getDate() % MOTIVATIONS.length];
+}
+
+function openModuleDetail(mid) {
+  currentModuleId = mid; currentFiltre = 'Tout';
+  const m = Store.getModules().find(x => x.id === mid);
+  if (!m) return;
+  $('#modal-module-title').textContent = m.nom;
+  $('#fab-add-chapitre').classList.remove('hidden');
+  $('#fab-add-chapitre').style.background = m.couleur;
+  renderModuleDetail();
+  $('#modal-module').classList.remove('hidden');
+}
+
+function renderModuleDetail() {
+  const m = Store.getModules().find(x => x.id === currentModuleId);
+  if (!m) return;
+  const ch = Store.getChapitres().filter(c => c.module_id === currentModuleId);
+  const t = ch.filter(c => c.statut === 'Terminé').length, tot = ch.length;
+  const prog = tot ? t / tot : 0, diff = ch.filter(c => c.est_difficile).length;
+  const j = Math.ceil((new Date(m.date_examen) - Date.now()) / 86400000);
+
+  $('#module-progress').textContent = Math.round(prog * 100) + '%';
+  $('#module-chapitres').textContent = t + '/' + tot;
+  $('#module-jours').textContent = 'J-' + j;
+  $('#module-jours').style.color = j <= 7 ? '#EF4444' : '#E6EDF3';
+  $('#module-progress-bar').style.width = prog * 100 + '%';
+  $('#module-progress-bar').style.background = m.couleur;
+
+  $$('.filtre-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filtre === currentFiltre);
+  });
+
+  const cf = currentFiltre === 'Tout' ? ch : ch.filter(c => c.statut === currentFiltre);
+  $('#chapitres-list').innerHTML = cf.map(c => `
+    <div class="chapitre-item" data-id="${c.id}">
+      <div class="chapitre-checkbox ${c.statut === 'Terminé' ? 'done' : c.statut === 'En cours' ? 'in-progress' : ''}" style="border-color:${c.statut === 'Terminé' ? '#10B981' : c.statut === 'En cours' ? '#F59E0B' : '#21262D'}">
+        ${c.statut === 'Terminé' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        ${c.statut === 'En cours' ? '<div style="width:8px;height:8px;border-radius:50%;background:#F59E0B"></div>' : ''}
+      </div>
+      <div class="chapitre-content">
+        <div class="chapitre-titre ${c.statut === 'Terminé' ? 'done' : ''}">${c.titre}</div>
+        <div class="chapitre-tags">
+          <span class="chapitre-tag" style="background:${m.couleur}20;color:${m.couleur}">P${c.priorite}</span>
+          ${c.est_difficile ? '<span class="chapitre-tag" style="background:#EF444420;color:#EF4444">Difficile</span>' : ''}
+          <span class="chapitre-tag" style="background:' + (c.statut === 'Terminé' ? '#10B981' : c.statut === 'En cours' ? '#F59E0B' : '#6E7681') + '20;color:' + (c.statut === 'Terminé' ? '#10B981' : c.statut === 'En cours' ? '#F59E0B' : '#6E7681') + '">' + c.statut + '</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  $$('.chapitre-item').forEach(item => {
+    const cid = item.dataset.id, chapitre = Store.getChapitres().find(c => c.id === cid);
+    item.addEventListener('click', () => {
+      Haptics.light();
+      const ns = chapitre.statut === 'À faire' ? 'En cours' : chapitre.statut === 'En cours' ? 'Terminé' : 'À faire';
+      Store.updateChapitre(cid, { statut: ns });
+      renderModuleDetail(); renderHome();
+    });
+    let lp;
+    item.addEventListener('touchstart', () => {
+      lp = setTimeout(() => {
+        Haptics.heavy();
+        Store.updateChapitre(cid, { est_difficile: !chapitre.est_difficile });
+        renderModuleDetail(); renderHome();
+      }, 600);
+    });
+    item.addEventListener('touchend', () => clearTimeout(lp));
+    item.addEventListener('touchmove', () => clearTimeout(lp));
+    item.addEventListener('contextmenu', e => {
+      e.preventDefault(); Haptics.heavy();
+      if (confirm('Supprimer ce chapitre ?')) { Store.removeChapitre(cid); renderModuleDetail(); renderHome(); }
+    });
+  });
+}
+
+// Timer
+let ti = null, ts = 1500, tm = 'pomodoro', ir = false, sess = 0, scid = null;
+function ft(s) { const m = Math.floor(s / 60), sc = s % 60; return `${m.toString().padStart(2, '0')}:${sc.toString().padStart(2, '0')}`; }
+function utd() {
+  $('#timer-display').textContent = ft(ts);
+  const tot = tm === 'pomodoro' ? 1500 : 3000, prog = 1 - ts / tot;
+  const circ = 2 * Math.PI * 120;
+  $('#timer-circle').setAttribute('stroke-dasharray', `${circ * prog} ${circ}`);
+}
+function st() {
+  if (!scid) { alert('Choisis un chapitre avant de commencer'); return; }
+  ir = true; $('#timer-label').textContent = 'En cours...';
+  $('#btn-play').innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+  ti = setInterval(() => { ts--; utd(); if (ts <= 0) ct(); }, 1000);
+}
+function pt() { ir = false; clearInterval(ti); $('#timer-label').textContent = 'En pause'; $('#btn-play').innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; }
+function rt() { pt(); ts = tm === 'pomodoro' ? 1500 : 3000; $('#timer-label').textContent = 'Prêt'; utd(); }
+function ct() {
+  pt(); Haptics.success(); sess++; $('#sessions-number').textContent = sess;
+  const mod = Store.getModules().find(m => { const c = Store.getChapitres().find(x => x.id === scid); return c && c.module_id === m.id; });
+  $('#dots-container').innerHTML += `<div class="dot" style="background:${mod ? mod.couleur : '#3B82F6'}"></div>`;
+  Store.addSeance({ id: Date.now().toString(), chapitre_id: scid, date: new Date().toISOString().split('T')[0], duree_minutes: tm === 'pomodoro' ? 25 : 50 });
+  alert(`Bravo ! Session de ${tm === 'pomodoro' ? 25 : 50} minutes terminée !`);
+  renderHome(); renderStats();
+}
+
+function renderFocus() {
+  $('#focus-modules').innerHTML = Store.getModules().map(m => `<div class="chip" data-module="${m.id}" style="--chip-color:${m.couleur}"><div class="chip-dot" style="background:${m.couleur}"></div><span class="chip-text">${m.nom}</span></div>`).join('');
+  $$('.chip').forEach(chip => {
+    chip.addEventListener('click', () => { Haptics.light(); $$('.chip').forEach(c => c.classList.remove('selected')); chip.classList.add('selected'); renderFocusChapitres(chip.dataset.module); });
+  });
+}
+function renderFocusChapitres(mid) {
+  const ch = Store.getChapitres().filter(c => c.module_id === mid && c.statut !== 'Terminé');
+  const sec = $('#focus-chapitres-section');
+  if (!ch.length) { sec.innerHTML = '<p style="color:#6E7681;font-style:italic">Tous les chapitres sont terminés !</p>'; return; }
+  const mod = Store.getModules().find(m => m.id === mid);
+  sec.innerHTML = '<h3>Chapitre</h3>' + ch.map(c => `<div class="chapitre-item focus-chapitre" data-id="${c.id}" style="cursor:pointer"><div class="chapitre-content"><div class="chapitre-titre">${c.titre}</div><div class="chapitre-tags"><span class="chapitre-tag" style="background:${mod.couleur}20;color:${mod.couleur}">P${c.priorite}</span>${c.est_difficile ? '<span class="chapitre-tag" style="background:#EF444420;color:#EF4444">Difficile</span>' : ''}</div></div></div>`).join('');
+  $$('.focus-chapitre').forEach(item => {
+    item.addEventListener('click', () => { Haptics.light(); scid = item.dataset.id; $$('.focus-chapitre').forEach(i => i.style.borderColor = ''); item.style.borderColor = mod.couleur; $('#timer-circle').setAttribute('stroke', mod.couleur); });
+  });
+}
+
+function renderStats() {
+  const modules = Store.getModules(), chapitres = Store.getChapitres(), seances = Store.getSeances();
+  const tm = seances.reduce((s, x) => s + x.duree_minutes, 0), ts = seances.length;
+  const dr = chapitres.filter(c => c.est_difficile && c.statut !== 'Terminé').length, mt = Store.getTotalMinutesToday();
+  const t = chapitres.filter(c => c.statut === 'Terminé').length, tot = chapitres.length, prog = tot ? t / tot : 0;
+
+  $('#kpi-temps').textContent = `${Math.floor(tm / 60)}h${tm % 60}m`;
+  $('#kpi-seances').textContent = ts;
+  $('#kpi-difficiles').textContent = dr;
+  $('#kpi-today').textContent = mt + 'm';
+
+  const circ = 2 * Math.PI * 68;
+  $('#stats-progress-circle').setAttribute('stroke-dasharray', `${circ * prog} ${circ}`);
+  $('#stats-progress-pct').textContent = Math.round(prog * 100) + '%';
+  $('#stats-progress-label').textContent = t + '/' + tot;
+
+  const tpm = Store.getTempsParModule();
+  $('#stats-modules-list').innerHTML = modules.map(m => {
+    const p = Store.getProgressionModule(m.id), mc = chapitres.filter(c => c.module_id === m.id);
+    const mt = mc.filter(c => c.statut === 'Terminé').length, mtot = mc.length;
+    const j = Math.ceil((new Date(m.date_examen) - Date.now()) / 86400000);
+    const temps = tpm.find(x => x.moduleId === m.id)?.minutes || 0;
+    return `<div class="stats-module-row"><div class="stats-module-header"><div class="stats-module-title"><div class="stats-module-dot" style="background:${m.couleur}"></div><span class="stats-module-name">${m.nom}</span></div>${j <= 14 ? `<span class="stats-module-jours" style="background:${j <= 7 ? '#EF4444' : '#F59E0B'}20;color:${j <= 7 ? '#EF4444' : '#F59E0B'}">J-${j}</span>` : ''}</div><div class="stats-progress-row"><div class="stats-progress-bar-bg"><div class="stats-progress-bar-fill" style="width:${p * 100}%;background:${m.couleur}"></div></div><span class="stats-progress-text">${mt}/${mtot} · ${Math.floor(temps / 60)}h${temps % 60}m</span></div></div>`;
+  }).join('');
+
+  const rs = $('#repartition-section');
+  if (tm > 0) {
+    rs.classList.remove('hidden');
+    $('#repartition-list').innerHTML = tpm.map(item => {
+      const m = modules.find(x => x.id === item.moduleId);
+      if (!m || !item.minutes) return '';
+      const pct = (item.minutes / tm) * 100;
+      return `<div class="repartition-row"><div class="repartition-label"><div class="repartition-dot" style="background:${m.couleur}"></div><span class="repartition-name">${m.nom}</span></div><div class="repartition-bar-bg"><div class="repartition-bar-fill" style="width:${pct}%;background:${m.couleur}"></div></div><span class="repartition-value">${Math.round(pct)}%</span></div>`;
+    }).join('');
+  } else rs.classList.add('hidden');
+}
+
+// Events
+document.addEventListener('DOMContentLoaded', () => {
+  // Tabs
+  $$('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      Haptics.light();
+      const tab = btn.dataset.tab;
+      $$('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+      $$('.screen').forEach(s => s.classList.remove('active')); $(`#screen-${tab}`).classList.add('active');
+      if (tab === 'home') renderHome(); if (tab === 'focus') renderFocus(); if (tab === 'stats') renderStats();
+    });
+  });
+
+  // Add module
+  $('#btn-add-module').addEventListener('click', () => { Haptics.light(); $('#modal-add-module').classList.remove('hidden'); });
+  $('#cancel-add-module').addEventListener('click', () => { $('#modal-add-module').classList.add('hidden'); });
+  let sc = '#3B82F6';
+  $$('.color-option').forEach(opt => {
+    opt.addEventListener('click', () => { $$('.color-option').forEach(o => o.classList.remove('selected')); opt.classList.add('selected'); sc = opt.dataset.color; });
+  });
+  $('#confirm-add-module').addEventListener('click', () => {
+    const n = $('#new-module-name').value.trim(), d = $('#new-module-date').value;
+    if (!n || !d) { alert('Remplis tous les champs'); return; }
+    Store.addModule({ id: Date.now().toString(), nom: n, couleur: sc, date_examen: d });
+    Haptics.success(); $('#modal-add-module').classList.add('hidden');
+    $('#new-module-name').value = ''; $('#new-module-date').value = ''; renderHome();
+  });
+
+  // Close module detail
+  $('#close-module-modal').addEventListener('click', () => { $('#modal-module').classList.add('hidden'); $('#fab-add-chapitre').classList.add('hidden'); currentModuleId = null; });
+
+  // Filtres
+  $$('.filtre-btn').forEach(btn => {
+    btn.addEventListener('click', () => { Haptics.light(); currentFiltre = btn.dataset.filtre; renderModuleDetail(); });
+  });
+
+  // Delete module
+  $('#btn-delete-module').addEventListener('click', () => {
+    if (confirm('Supprimer ce module ?')) { Store.removeModule(currentModuleId); Haptics.success(); $('#modal-module').classList.add('hidden'); $('#fab-add-chapitre').classList.add('hidden'); currentModuleId = null; renderHome(); }
+  });
+
+  // FAB add chapitre
+  $('#fab-add-chapitre').addEventListener('click', () => { Haptics.medium(); $('#modal-add-chapitre').classList.remove('hidden'); });
+  $('#cancel-add-chapitre').addEventListener('click', () => { $('#modal-add-chapitre').classList.add('hidden'); });
+  let sp = 2;
+  $$('.priorite-btn').forEach(btn => {
+    btn.addEventListener('click', () => { $$('.priorite-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); sp = parseInt(btn.dataset.priorite); });
+  });
+  $('#confirm-add-chapitre').addEventListener('click', () => {
+    const t = $('#new-chapitre-titre').value.trim();
+    if (!t) { alert('Entre un titre'); return; }
+    Store.addChapitre({ id: Date.now().toString(), module_id: currentModuleId, titre: t, priorite: sp, statut: 'À faire', est_difficile: $('#new-chapitre-difficile').checked });
+    Haptics.success(); $('#modal-add-chapitre').classList.add('hidden');
+    $('#new-chapitre-titre').value = ''; $('#new-chapitre-difficile').checked = false; sp = 2;
+    $$('.priorite-btn').forEach(b => b.classList.remove('selected')); $$('.priorite-btn')[1].classList.add('selected');
+    renderModuleDetail(); renderHome();
+  });
+
+  // Timer
+  $('#btn-play').addEventListener('click', () => { Haptics.medium(); ir ? pt() : st(); });
+  $('#btn-reset').addEventListener('click', () => { Haptics.light(); rt(); });
+  $$('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => { Haptics.light(); tm = btn.dataset.mode; $$('.mode-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); rt(); });
+  });
+
+  // Close modals on overlay click
+  $$('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.closest('.modal').classList.add('hidden'); });
+  });
+
+  // Init
+  renderHome(); renderFocus(); renderStats();
+});
+</script>
+</body>
+</html>
